@@ -1,0 +1,24 @@
+# Build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Publish output
+publish/
+dist/
+
+# User-specific
+*.log
+appsettings.Development.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Rider/VS Code
+.idea/
+.vscode/
+*.DotSettings.user

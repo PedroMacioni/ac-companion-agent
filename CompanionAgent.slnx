@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CompanionAgent.App/CompanionAgent.App.csproj" />
+    <Project Path="src/CompanionAgent.Core/CompanionAgent.Core.csproj" />
+  </Folder>
+</Solution>

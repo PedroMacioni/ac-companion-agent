@@ -23,6 +23,7 @@ public partial class SettingsTab : UserControl
         };
         BtnDetectAc.Click += (_, _) => TxtAcPath.Text = DetectAcPath() ?? TxtAcPath.Text;
         BtnDetectCm.Click += (_, _) => TxtCmPath.Text = DetectCmSessionsPath() ?? TxtCmPath.Text;
+        BtnDetectPb.Click += (_, _) => TxtPbPath.Text = DetectPersonalBestPath() ?? TxtPbPath.Text;
         BtnBrowseAc.Click += (_, _) => BrowseFolder(TxtAcPath);
         BtnBrowseCm.Click += (_, _) => BrowseFolder(TxtCmPath);
         BtnBrowsePb.Click += (_, _) => BrowseFile(TxtPbPath, "INI files|*.ini|All files|*.*");
@@ -113,6 +114,14 @@ public partial class SettingsTab : UserControl
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "AcTools Content Manager", "Progress", "Sessions");
         return Directory.Exists(path) ? path : null;
+    }
+
+    private static string? DetectPersonalBestPath()
+    {
+        var path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "Assetto Corsa", "personalbest.ini");
+        return File.Exists(path) ? path : null;
     }
 
     private static void BrowseFolder(TextBox target)

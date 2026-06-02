@@ -14,6 +14,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private bool _isSyncing;
     private SyncState _syncState = SyncState.Unconfigured;
     private string _statusMessage = "";
+    private bool _watcherActive;
 
     public bool IsConnected { get => _isConnected; set => Set(ref _isConnected, value); }
     public string UserEmail { get => _userEmail; set => Set(ref _userEmail, value); }
@@ -25,6 +26,8 @@ public sealed class OverviewViewModel : ViewModelBase
     public bool IsSyncing { get => _isSyncing; set => Set(ref _isSyncing, value); }
     public SyncState CurrentSyncState { get => _syncState; set => Set(ref _syncState, value); }
     public string StatusMessage { get => _statusMessage; set => Set(ref _statusMessage, value); }
+    public bool WatcherActive { get => _watcherActive; set => Set(ref _watcherActive, value); }
+    public string ComputerName { get; } = Environment.MachineName;
 
     public bool IsSourceMode => Mode == "source";
 

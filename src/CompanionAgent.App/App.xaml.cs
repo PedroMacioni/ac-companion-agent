@@ -117,6 +117,7 @@ public partial class App : Application
         };
 
         bool setupWatchers = Settings.Mode == "source";
+        OverviewVm.WatcherActive = setupWatchers;
         Worker.Start(Settings.SyncIntervalMinutes, setupWatchers);
 
         Log.Info(LogCategory.App,

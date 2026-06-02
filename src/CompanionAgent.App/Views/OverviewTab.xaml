@@ -3,39 +3,84 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="24,20" MaxWidth="600" HorizontalAlignment="Left">
+        <StackPanel Margin="16,16">
 
             <!-- Connection card -->
             <Border Background="{StaticResource SurfaceBrush}"
                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                    CornerRadius="4" Padding="16,14" Margin="0,0,0,16">
+                    CornerRadius="4" Padding="14,12" Margin="0,0,0,10">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
-                        <StackPanel Orientation="Horizontal">
-                            <Ellipse x:Name="ConnDot" Width="9" Height="9"
-                                     Fill="{StaticResource ErrorBrush}"
-                                     VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBlock x:Name="ConnText" Text="Desconectado"
-                                       FontWeight="SemiBold"/>
-                        </StackPanel>
+                    <Ellipse x:Name="ConnDot" Grid.Column="0" Width="9" Height="9"
+                             Fill="{StaticResource ErrorBrush}"
+                             VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="ConnText" Text="Desconectado"
+                                   FontWeight="SemiBold" FontSize="13"/>
                         <TextBlock x:Name="ModeText" Text="Modo: —"
                                    Foreground="{StaticResource TextMutedBrush}"
-                                   FontSize="12" Margin="0,4,0,0"/>
+                                   FontSize="11" Margin="0,2,0,0"/>
                     </StackPanel>
-                    <Button Grid.Column="1" x:Name="BtnDisconnect"
+                    <Button Grid.Column="2" x:Name="BtnDisconnect"
                             Content="Desconectar" Visibility="Collapsed"
                             VerticalAlignment="Center" FontSize="12"/>
                 </Grid>
             </Border>
 
-            <!-- Sync status card -->
+            <!-- Stats row -->
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="4" Padding="14,16">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock x:Name="TxtSessions" Text="—"
+                                   FontSize="30" FontWeight="Bold"
+                                   Foreground="{StaticResource AccentBrush}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="SESSÕES SINCRONIZADAS"
+                                   FontSize="9" FontWeight="Bold"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,4,0,0" TextWrapping="Wrap"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="4" Padding="14,16">
+                    <StackPanel HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Ellipse x:Name="WatcherDot" Width="9" Height="9"
+                                     Fill="{StaticResource TextMutedBrush}"
+                                     VerticalAlignment="Center" Margin="0,0,7,0"/>
+                            <TextBlock x:Name="TxtWatcher" Text="Inativo"
+                                       FontSize="18" FontWeight="Bold"
+                                       Foreground="{StaticResource TextMutedBrush}"/>
+                        </StackPanel>
+                        <TextBlock Text="MONITORAMENTO"
+                                   FontSize="9" FontWeight="Bold"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Sync card -->
             <Border Background="{StaticResource SurfaceBrush}"
                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                    CornerRadius="4" Margin="0,0,0,16" ClipToBounds="True">
+                    CornerRadius="4" Margin="0,0,0,10" ClipToBounds="True">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="3"/>
@@ -43,34 +88,74 @@
                     </Grid.ColumnDefinitions>
                     <Border x:Name="SyncCardAccent" Grid.Column="0"
                             Background="{StaticResource TextMutedBrush}"/>
-                    <StackPanel Grid.Column="1" Margin="13,14,16,14">
-                        <TextBlock x:Name="LastSyncText"
-                                   Text="Último sync: nunca"
-                                   FontSize="13"/>
+                    <StackPanel Grid.Column="1" Margin="13,14,14,14">
+                        <TextBlock Text="SINCRONIZAÇÃO"
+                                   FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBlock x:Name="LastSyncText" Text="Último sync: nunca"
+                                   FontSize="13" FontWeight="SemiBold"/>
                         <TextBlock x:Name="SyncCountText"
                                    Foreground="{StaticResource TextMutedBrush}"
                                    FontSize="12" Margin="0,4,0,0"/>
                         <TextBlock x:Name="NextSyncText"
                                    Foreground="{StaticResource TextMutedBrush}"
-                                   FontSize="12" Margin="0,4,0,8"/>
-
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="BtnSyncNow" Content="Sincronizar agora"
-                                    Style="{StaticResource AccentButton}"
-                                    Margin="0,0,8,0"/>
-                            <Button x:Name="BtnResyncLaps" Content="Ressincronizar laps"/>
-                        </StackPanel>
+                                   FontSize="12" Margin="0,3,0,0"/>
+                        <TextBlock x:Name="StatusMsg" Text=""
+                                   FontSize="12" TextWrapping="Wrap"
+                                   Margin="0,6,0,0" Visibility="Collapsed"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- Status message (shown during sync or on error) -->
-            <Border x:Name="StatusBanner" Visibility="Collapsed"
-                    Background="{StaticResource SurfaceBrush}"
+            <!-- Action buttons -->
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" x:Name="BtnSyncNow"
+                        Content="Sincronizar agora"
+                        Style="{StaticResource AccentButton}"
+                        Padding="0,10"/>
+                <Button Grid.Column="2" x:Name="BtnResyncLaps"
+                        Content="Ressincronizar laps"
+                        Padding="0,10"/>
+            </Grid>
+
+            <!-- Device / system info -->
+            <Border Background="{StaticResource SurfaceBrush}"
                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                    CornerRadius="4" Padding="12,10">
-                <TextBlock x:Name="StatusMsg" Text="" TextWrapping="Wrap"
-                           Foreground="{StaticResource WarningBrush}"/>
+                    CornerRadius="4" Padding="14,12">
+                <StackPanel>
+                    <TextBlock Text="DISPOSITIVO"
+                               FontSize="10" FontWeight="Bold"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               Margin="0,0,0,8"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Computador"
+                                       FontSize="11"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Margin="0,0,0,2"/>
+                            <TextBlock x:Name="TxtComputer" Text="—"
+                                       FontSize="12" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Versão"
+                                       FontSize="11"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Margin="0,0,0,2"/>
+                            <TextBlock x:Name="TxtVersion" Text="v3.0.0"
+                                       FontSize="12" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
             </Border>
 
         </StackPanel>

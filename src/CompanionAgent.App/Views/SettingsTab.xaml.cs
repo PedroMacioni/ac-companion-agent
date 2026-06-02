@@ -12,58 +12,47 @@ public partial class SettingsTab : UserControl
     public SettingsTab()
     {
         InitializeComponent();
-        Loaded += (_, _) => Setup();
-    }
 
-    private void Setup()
-    {
-        var vm = App.SettingsVm;
-
-        // Load values into controls
-        TxtAcPath.Text = vm.AcPath;
-        TxtCmPath.Text = vm.CmSessionsPath;
-        TxtPbPath.Text = vm.PersonalBestPath;
-        SliderPoll.Value = Math.Clamp(vm.PollSeconds, 10, 120);
-        ChkAutoStart.IsChecked = vm.AutoStart;
-
-        // Mode combo
-        foreach (ComboBoxItem item in ComboMode.Items)
-            if ((string)item.Tag == vm.Mode) { ComboMode.SelectedItem = item; break; }
-        if (ComboMode.SelectedItem == null) ComboMode.SelectedIndex = 0;
-
-        // Language combo
-        foreach (ComboBoxItem item in ComboLang.Items)
-            if ((string)item.Tag == vm.Language) { ComboLang.SelectedItem = item; break; }
-        if (ComboLang.SelectedItem == null) ComboLang.SelectedIndex = 0;
-
-        // Poll slider label
-        TxtPollValue.Text = $"{(int)SliderPoll.Value}s";
+        // Wire all event handlers once in constructor — never in Loaded
         SliderPoll.ValueChanged += (_, e) => TxtPollValue.Text = $"{(int)e.NewValue}s";
-
-        // Language change hint
         ComboLang.SelectionChanged += (_, _) =>
         {
             var selected = (ComboLang.SelectedItem as ComboBoxItem)?.Tag as string ?? "pt-BR";
             LangRestartHint.Visibility = selected != I18n.CurrentLanguage
                 ? Visibility.Visible : Visibility.Collapsed;
         };
-
-        // Detect buttons
         BtnDetectAc.Click += (_, _) => TxtAcPath.Text = DetectAcPath() ?? TxtAcPath.Text;
         BtnDetectCm.Click += (_, _) => TxtCmPath.Text = DetectCmSessionsPath() ?? TxtCmPath.Text;
-
-        // Browse buttons
         BtnBrowseAc.Click += (_, _) => BrowseFolder(TxtAcPath);
         BtnBrowseCm.Click += (_, _) => BrowseFolder(TxtCmPath);
         BtnBrowsePb.Click += (_, _) => BrowseFile(TxtPbPath, "INI files|*.ini|All files|*.*");
-
-        // Save
         BtnSave.Click += (_, _) => SaveSettings();
-
-        // Auth section
-        UpdateAuthView();
         BtnLogout.Click += (_, _) => DoLogout();
         BtnLogin.Click += async (_, _) => await DoLoginAsync();
+
+        Loaded += (_, _) => LoadValues();
+    }
+
+    private void LoadValues()
+    {
+        var vm = App.SettingsVm;
+
+        TxtAcPath.Text = vm.AcPath;
+        TxtCmPath.Text = vm.CmSessionsPath;
+        TxtPbPath.Text = vm.PersonalBestPath;
+        SliderPoll.Value = Math.Clamp(vm.PollSeconds, 10, 120);
+        TxtPollValue.Text = $"{vm.PollSeconds}s";
+        ChkAutoStart.IsChecked = vm.AutoStart;
+
+        foreach (ComboBoxItem item in ComboMode.Items)
+            if ((string)item.Tag == vm.Mode) { ComboMode.SelectedItem = item; break; }
+        if (ComboMode.SelectedItem == null) ComboMode.SelectedIndex = 0;
+
+        foreach (ComboBoxItem item in ComboLang.Items)
+            if ((string)item.Tag == vm.Language) { ComboLang.SelectedItem = item; break; }
+        if (ComboLang.SelectedItem == null) ComboLang.SelectedIndex = 0;
+
+        UpdateAuthView();
     }
 
     private void SaveSettings()

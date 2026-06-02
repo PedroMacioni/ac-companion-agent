@@ -159,13 +159,11 @@ begin
     Exit;
   end;
 
-  // Determine language
   if ActiveLanguage = 'ptbr' then
     Language := 'pt-BR'
   else
     Language := 'en';
 
-  // Determine mode
   if ModePage.Values[0] then
     Mode := 'source'
   else
@@ -174,7 +172,10 @@ begin
   AcPath := AcPathPage.Values[0];
   CmPath := CmPathPage.Values[0];
 
-  // Build JSON manually (Inno Setup has no JSON library)
+  // Escape backslashes for JSON using StringChangeEx (Inno Setup built-in)
+  StringChangeEx(AcPath, '\', '\\', False);
+  StringChangeEx(CmPath, '\', '\\', False);
+
   Json := '{' + #13#10;
   Json := Json + '  "SupabaseUrl": "https://nnhbowhfqjucedjnsvtp.supabase.co",' + #13#10;
   Json := Json + '  "SupabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uaGJvd2hmcWp1Y2Vkam5zdnRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMzEwMjgsImV4cCI6MjA5NDgwNzAyOH0.83_32291NL4y4p4J8FjgpGTy2_XSO03PJ9edMgs8zy8",' + #13#10;
@@ -189,8 +190,8 @@ begin
     Json := Json + '  "AutoStart": false,' + #13#10;
   Json := Json + '  "Mode": "' + Mode + '",' + #13#10;
   Json := Json + '  "Language": "' + Language + '",' + #13#10;
-  Json := Json + '  "AcPath": "' + StringReplace(AcPath, '\', '\\', [rfReplaceAll]) + '",' + #13#10;
-  Json := Json + '  "CmSessionsPath": "' + StringReplace(CmPath, '\', '\\', [rfReplaceAll]) + '",' + #13#10;
+  Json := Json + '  "AcPath": "' + AcPath + '",' + #13#10;
+  Json := Json + '  "CmSessionsPath": "' + CmPath + '",' + #13#10;
   Json := Json + '  "PersonalBestPath": "",' + #13#10;
   Json := Json + '  "WebSyncPollSeconds": 30' + #13#10;
   Json := Json + '}';

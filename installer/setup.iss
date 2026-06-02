@@ -183,7 +183,10 @@ begin
   Json := Json + '  "RefreshToken": "",' + #13#10;
   Json := Json + '  "UserEmail": "",' + #13#10;
   Json := Json + '  "SyncIntervalMinutes": 5,' + #13#10;
-  Json := Json + '  "AutoStart": ' + BoolToStr(IsTaskSelected('autostart'), True) + ',' + #13#10;
+  if IsTaskSelected('autostart') then
+    Json := Json + '  "AutoStart": true,' + #13#10
+  else
+    Json := Json + '  "AutoStart": false,' + #13#10;
   Json := Json + '  "Mode": "' + Mode + '",' + #13#10;
   Json := Json + '  "Language": "' + Language + '",' + #13#10;
   Json := Json + '  "AcPath": "' + StringReplace(AcPath, '\', '\\', [rfReplaceAll]) + '",' + #13#10;

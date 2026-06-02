@@ -5,10 +5,9 @@
 #define AppVersion "3.0.0"
 #define AppPublisher "Sim Racing Companion"
 #define AppExeName "SimRacingCompanion.exe"
-#define AppGUID "{8A9B3C4D-5E6F-7890-ABCD-EF1234567890}"
 
 [Setup]
-AppId={{{#AppGUID}}}
+AppId={{8A9B3C4D-5E6F-7890-ABCD-EF1234567890}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}

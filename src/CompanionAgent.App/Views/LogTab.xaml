@@ -46,11 +46,23 @@
                  FontFamily="Consolas" FontSize="12">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <TextBlock x:Name="LogLine"
-                               Text="{Binding DisplayText}"
-                               Foreground="{Binding LevelColor}"
-                               TextWrapping="NoWrap"
-                               Padding="4,1"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="62"/>
+                            <ColumnDefinition Width="46"/>
+                            <ColumnDefinition Width="74"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding TimestampText}"
+                                   Foreground="{Binding TimestampColor}" FontFamily="Consolas" FontSize="11"/>
+                        <TextBlock Grid.Column="1" Text="{Binding LevelText}"
+                                   Foreground="{Binding LevelColor}" FontFamily="Consolas" FontSize="11" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Column="2" Text="{Binding CategoryText}"
+                                   Foreground="{Binding TimestampColor}" FontFamily="Consolas" FontSize="11"/>
+                        <TextBlock Grid.Column="3" Text="{Binding Message}"
+                                   Foreground="{Binding LevelColor}" FontFamily="Consolas" FontSize="11"
+                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                    </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>

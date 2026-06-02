@@ -45,6 +45,15 @@ public partial class OverviewTab : UserControl
         BtnSyncNow.IsEnabled = vm.IsConnected && vm.IsSourceMode && !vm.IsSyncing;
         BtnResyncLaps.IsEnabled = vm.IsConnected && vm.IsSourceMode && !vm.IsSyncing;
 
+        // Update card accent color based on sync state
+        SyncCardAccent.Background = vm.CurrentSyncState switch
+        {
+            SyncState.Syncing => new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B)),
+            SyncState.Error => new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44)),
+            SyncState.Idle => new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E)),
+            _ => new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33))
+        };
+
         // Status banner
         var showBanner = vm.CurrentSyncState == SyncState.Error || vm.IsSyncing;
         StatusBanner.Visibility = showBanner ? Visibility.Visible : Visibility.Collapsed;

@@ -84,25 +84,28 @@ public partial class LogTab : UserControl
 
     private static LogEntryDisplay ToDisplay(LogEntry e)
     {
-        var levelStr = e.Level switch
+        var (levelStr, color) = e.Level switch
         {
-            LogLevel.Info => "INFO ",
-            LogLevel.Warning => "WARN ",
-            LogLevel.Error => "ERROR",
-            LogLevel.Success => "OK   ",
-            _ => "INFO "
+            LogLevel.Success => ("OK   ", new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E))),
+            LogLevel.Warning => ("WARN ", new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B))),
+            LogLevel.Error   => ("ERROR", new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44))),
+            _                => ("INFO ", new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)))
         };
-        var color = e.Level switch
-        {
-            LogLevel.Success => new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E)),
-            LogLevel.Warning => new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B)),
-            LogLevel.Error => new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44)),
-            _ => new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88))
-        };
+        var muted = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x55));
         return new LogEntryDisplay(
-            $"{e.Timestamp:HH:mm:ss} {levelStr} [{e.Category}] {e.Message}",
-            color);
+            TimestampText: e.Timestamp.ToString("HH:mm:ss"),
+            LevelText: levelStr,
+            CategoryText: $"[{e.Category}]",
+            Message: e.Message,
+            LevelColor: (SolidColorBrush)color,
+            TimestampColor: muted);
     }
 }
 
-public sealed record LogEntryDisplay(string DisplayText, Brush LevelColor);
+public sealed record LogEntryDisplay(
+    string TimestampText,
+    string LevelText,
+    string CategoryText,
+    string Message,
+    Brush LevelColor,
+    Brush TimestampColor);

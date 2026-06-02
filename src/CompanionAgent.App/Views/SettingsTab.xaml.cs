@@ -28,6 +28,10 @@ public partial class SettingsTab : UserControl
         BtnBrowsePb.Click += (_, _) => BrowseFile(TxtPbPath, "INI files|*.ini|All files|*.*");
         BtnSave.Click += (_, _) => SaveSettings();
         BtnLogout.Click += (_, _) => DoLogout();
+        BtnConnectViaWeb.Click += async (_, _) => await DoDeviceAuthAsync();
+        BtnCancelDeviceAuth.Click += (_, _) => CancelDeviceAuth();
+        ChkEmailLogin.Checked += (_, _) => PanelEmailLogin.Visibility = Visibility.Visible;
+        ChkEmailLogin.Unchecked += (_, _) => PanelEmailLogin.Visibility = Visibility.Collapsed;
         BtnLogin.Click += async (_, _) => await DoLoginAsync();
 
         Loaded += (_, _) => LoadValues();
@@ -139,6 +143,12 @@ public partial class SettingsTab : UserControl
         PanelLoggedIn.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
         PanelLogin.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
         if (connected) TxtLoggedAs.Text = $"Conectado como {App.Settings.UserEmail}";
+        if (!connected)
+        {
+            TxtDeviceAuthStatus.Visibility = Visibility.Collapsed;
+            BtnCancelDeviceAuth.Visibility = Visibility.Collapsed;
+            BtnConnectViaWeb.IsEnabled = true;
+        }
     }
 
     private void DoLogout()
@@ -153,6 +163,68 @@ public partial class SettingsTab : UserControl
         App.OverviewVm.UserEmail = "";
         App.Log.Info(LogCategory.Auth, "Usuário desconectado");
         UpdateAuthView();
+    }
+
+    private CancellationTokenSource? _deviceAuthCts;
+
+    private async Task DoDeviceAuthAsync()
+    {
+        BtnConnectViaWeb.IsEnabled = false;
+        TxtDeviceAuthStatus.Visibility = Visibility.Visible;
+        BtnCancelDeviceAuth.Visibility = Visibility.Visible;
+
+        _deviceAuthCts = new CancellationTokenSource();
+
+        using var service = new DeviceAuthService(App.Settings.WebAppUrl);
+        service.StatusChanged += msg =>
+            Dispatcher.Invoke(() => TxtDeviceAuthStatus.Text = msg);
+
+        try
+        {
+            var result = await service.AuthenticateAsync(_deviceAuthCts.Token);
+            if (result == null)
+            {
+                // Status already set by service
+            }
+            else
+            {
+                App.Supabase.SetTokens(result.Value.AccessToken, result.Value.RefreshToken);
+                if (App.Supabase.IsConfigured)
+                {
+                    App.Settings.UserToken = result.Value.AccessToken;
+                    App.Settings.RefreshToken = result.Value.RefreshToken;
+                    App.Settings.UserEmail = App.Supabase.UserEmail;
+                    SettingsStore.Save(App.Settings);
+                    App.OverviewVm.IsConnected = true;
+                    App.OverviewVm.UserEmail = App.Supabase.UserEmail;
+                    App.Log.Success(LogCategory.Auth, $"Conectado como {App.Supabase.UserEmail} via site");
+                    if (App.Settings.Mode == "source")
+                        App.StartSyncWorker();
+                    UpdateAuthView();
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            TxtDeviceAuthStatus.Text = "Cancelado.";
+        }
+        catch (Exception ex)
+        {
+            TxtDeviceAuthStatus.Text = $"Erro: {ex.Message}";
+            App.Log.Error(LogCategory.Auth, $"Falha na autenticação via site: {ex.Message}");
+        }
+        finally
+        {
+            BtnConnectViaWeb.IsEnabled = true;
+            BtnCancelDeviceAuth.Visibility = Visibility.Collapsed;
+            _deviceAuthCts?.Dispose();
+            _deviceAuthCts = null;
+        }
+    }
+
+    private void CancelDeviceAuth()
+    {
+        _deviceAuthCts?.Cancel();
     }
 
     private async Task DoLoginAsync()

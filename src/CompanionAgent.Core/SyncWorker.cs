@@ -34,9 +34,9 @@ public sealed class SyncWorker : IDisposable
         _log = log;
     }
 
-    public void Start(int intervalMinutes)
+    public void Start(int intervalMinutes, bool setupWatchers = true)
     {
-        SetupWatchers();
+        if (setupWatchers) SetupWatchers();
         _timer = new System.Threading.Timer(_ => _ = TickAsync(),
             null, TimeSpan.Zero, TimeSpan.FromMinutes(intervalMinutes));
     }

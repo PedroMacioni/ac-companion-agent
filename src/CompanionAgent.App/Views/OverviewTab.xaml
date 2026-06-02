@@ -1,0 +1,70 @@
+<UserControl x:Class="CompanionAgent.App.Views.OverviewTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24,20" MaxWidth="600" HorizontalAlignment="Left">
+
+            <!-- Connection card -->
+            <Border Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="4" Padding="16,14" Margin="0,0,0,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse x:Name="ConnDot" Width="9" Height="9"
+                                     Fill="{StaticResource ErrorBrush}"
+                                     VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="ConnText" Text="Desconectado"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <TextBlock x:Name="ModeText" Text="Modo: —"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="12" Margin="0,4,0,0"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" x:Name="BtnDisconnect"
+                            Content="Desconectar" Visibility="Collapsed"
+                            VerticalAlignment="Center" FontSize="12"/>
+                </Grid>
+            </Border>
+
+            <!-- Sync status card -->
+            <Border Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="4" Padding="16,14" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock x:Name="LastSyncText"
+                               Text="Último sync: nunca"
+                               FontSize="13"/>
+                    <TextBlock x:Name="SyncCountText"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               FontSize="12" Margin="0,4,0,0"/>
+                    <TextBlock x:Name="NextSyncText"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               FontSize="12" Margin="0,4,0,8"/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnSyncNow" Content="Sincronizar agora"
+                                Style="{StaticResource AccentButton}"
+                                Margin="0,0,8,0"/>
+                        <Button x:Name="BtnResyncLaps" Content="Ressincronizar laps"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Status message (shown during sync or on error) -->
+            <Border x:Name="StatusBanner" Visibility="Collapsed"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="4" Padding="12,10">
+                <TextBlock x:Name="StatusMsg" Text="" TextWrapping="Wrap"
+                           Foreground="{StaticResource WarningBrush}"/>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

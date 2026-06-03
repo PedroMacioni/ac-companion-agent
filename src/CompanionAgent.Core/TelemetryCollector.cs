@@ -6,11 +6,16 @@ public sealed class TelemetryCollector : IDisposable
     private readonly LapBuffer _buffer = new();
     private Timer? _timer;
 
-    private int _lastCompletedLaps = -1;
-    private int _lastSectorIndex = -1;
     private CompletedLapTelemetry? _bestLap;
     private int _bestLapTime = int.MaxValue;
     private bool _sessionActive;
+
+    // Lap delimitation via normalizedCarPosition: a lap is captured strictly
+    // between two start/finish line crossings, which guarantees a closed loop
+    // and discards the out-lap (pit exit) that precedes the first crossing.
+    private float _lastNormPos = -1f;
+    private bool  _hasStartedLap;
+    private int   _lastSectorIndex = -1;
 
     public bool IsConnected { get; private set; }
 
@@ -41,7 +46,7 @@ public sealed class TelemetryCollector : IDisposable
 
             if (g.CarCoordinates is null || g.CarCoordinates.Length < 3) return;
 
-            if (g.Status != 2)
+            if (g.Status != 2) // not LIVE
             {
                 if (_sessionActive) EndSession();
                 return;
@@ -49,39 +54,56 @@ public sealed class TelemetryCollector : IDisposable
 
             _sessionActive = true;
 
-            var (cx, cy, cz) = AcStructHelper.GetPlayerPosition(g);
+            var normPos = g.NormalizedCarPosition;
 
-            _buffer.AddFrame(new TelemetryFrame(
-                X:         cx,
-                Y:         cy,
-                Z:         cz,
-                SpeedKmh:  p.SpeedKmh,
-                Throttle:  p.Gas,
-                Brake:     p.Brake,
-                NormPos:   g.NormalizedCarPosition,
-                LapTimeMs: g.ICurrentTime
-            ));
+            // Detect start/finish line crossing: normPos wraps from ~1.0 back to ~0.0
+            bool crossedLine = _lastNormPos > 0.9f && normPos < 0.1f;
+            _lastNormPos = normPos;
 
-            if (g.CurrentSectorIndex != _lastSectorIndex && _lastSectorIndex >= 0)
-                _buffer.RecordSectorBoundary(_lastSectorIndex, g.NormalizedCarPosition);
-
-            _lastSectorIndex = g.CurrentSectorIndex;
-
-            if (g.CompletedLaps > _lastCompletedLaps && _lastCompletedLaps >= 0)
+            if (crossedLine)
             {
-                var lapTime = g.ILastTime;
-                var completed = _buffer.Finish(lapTime, hasCut: false);
-                _buffer.Clear();
-
-                if (completed is not null && lapTime > 0 && lapTime < _bestLapTime)
+                // The buffer now holds a full closed lap (crossing -> crossing).
+                if (_hasStartedLap)
                 {
-                    _bestLapTime = lapTime;
-                    _bestLap = completed;
-                    BestLapCompleted?.Invoke(this, completed);
+                    var lapTime = g.ILastTime;
+                    var completed = _buffer.Finish(lapTime, hasCut: false);
+
+                    if (completed is not null && lapTime > 0 && lapTime < _bestLapTime)
+                    {
+                        _bestLapTime = lapTime;
+                        _bestLap = completed;
+                        BestLapCompleted?.Invoke(this, completed);
+                    }
                 }
+
+                // Start recording the next lap from a clean slate.
+                _buffer.Clear();
+                _lastSectorIndex = -1;
+                _hasStartedLap = true;
             }
 
-            _lastCompletedLaps = g.CompletedLaps;
+            // Only record once we are inside a proper lap (after first crossing),
+            // so the pit-exit out-lap is never included.
+            if (_hasStartedLap)
+            {
+                var (cx, cy, cz) = AcStructHelper.GetPlayerPosition(g);
+
+                _buffer.AddFrame(new TelemetryFrame(
+                    X:         cx,
+                    Y:         cy,
+                    Z:         cz,
+                    SpeedKmh:  p.SpeedKmh,
+                    Throttle:  p.Gas,
+                    Brake:     p.Brake,
+                    NormPos:   normPos,
+                    LapTimeMs: g.ICurrentTime
+                ));
+
+                if (g.CurrentSectorIndex != _lastSectorIndex && _lastSectorIndex >= 0)
+                    _buffer.RecordSectorBoundary(_lastSectorIndex, normPos);
+
+                _lastSectorIndex = g.CurrentSectorIndex;
+            }
         }
         catch { }
     }
@@ -95,7 +117,8 @@ public sealed class TelemetryCollector : IDisposable
             _bestLap = null;
             _bestLapTime = int.MaxValue;
         }
-        _lastCompletedLaps = -1;
+        _hasStartedLap = false;
+        _lastNormPos = -1f;
         _lastSectorIndex = -1;
         _buffer.Clear();
     }

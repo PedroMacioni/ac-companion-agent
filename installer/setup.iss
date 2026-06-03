@@ -1,8 +1,9 @@
 ; Sim Racing Companion — Inno Setup Script
-; Version: 3.0.0
 
+#ifndef AppVersion
+  #define AppVersion "3.0.1"
+#endif
 #define AppName "Sim Racing Companion"
-#define AppVersion "3.0.0"
 #define AppPublisher "Sim Racing Companion"
 #define AppExeName "SimRacingCompanion.exe"
 
@@ -105,11 +106,9 @@ procedure InitializeWizard();
 var
   AcDefault, CmDefault: string;
 begin
-  // Detect paths
   AcDefault := DetectSteamPath();
   CmDefault := DetectCmSessionsPath();
 
-  // Mode selection page
   ModePage := CreateInputOptionPage(
     wpSelectDir,
     'Modo de operação', 'Como este computador será usado?',
@@ -118,7 +117,6 @@ begin
   ModePage.Add('Somente visualização — este PC não tem o AC (apenas recebe dados da plataforma)');
   ModePage.Values[0] := True;
 
-  // AC path page
   AcPathPage := CreateInputDirPage(
     ModePage.ID,
     'Pasta do Assetto Corsa', 'Onde o Assetto Corsa está instalado?',
@@ -127,7 +125,6 @@ begin
   AcPathPage.Add('Pasta do Assetto Corsa:');
   AcPathPage.Values[0] := AcDefault;
 
-  // CM Sessions path page
   CmPathPage := CreateInputDirPage(
     AcPathPage.ID,
     'Pasta de Sessões', 'Onde o Content Manager salva as sessões?',
@@ -140,9 +137,8 @@ end;
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
-  // Skip AC/CM path pages in viewer mode
   if (PageID = AcPathPage.ID) or (PageID = CmPathPage.ID) then
-    Result := ModePage.Values[1];  // viewer mode selected
+    Result := ModePage.Values[1];
 end;
 
 function WriteSettingsJson(): Boolean;
@@ -172,7 +168,6 @@ begin
   AcPath := AcPathPage.Values[0];
   CmPath := CmPathPage.Values[0];
 
-  // Escape backslashes for JSON using StringChangeEx (Inno Setup built-in)
   StringChangeEx(AcPath, '\', '\\', False);
   StringChangeEx(CmPath, '\', '\\', False);
 
@@ -184,7 +179,7 @@ begin
   Json := Json + '  "RefreshToken": "",' + #13#10;
   Json := Json + '  "UserEmail": "",' + #13#10;
   Json := Json + '  "SyncIntervalMinutes": 5,' + #13#10;
-  if IsTaskSelected('autostart') then
+  if WizardIsTaskSelected('autostart') then
     Json := Json + '  "AutoStart": true,' + #13#10
   else
     Json := Json + '  "AutoStart": false,' + #13#10;

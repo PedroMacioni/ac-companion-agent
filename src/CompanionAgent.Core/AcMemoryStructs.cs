@@ -88,8 +88,7 @@ public struct AcPhysics
     public float[] LocalVelocity;
 }
 
-// wchar_t in AC shared memory is 2 bytes — use ushort[] not char[]
-// char[] with ByValArray marshals as 1 byte (ANSI), causing struct misalignment
+// wchar_t in AC shared memory = 2 bytes — use ushort[] not char[]
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
 public struct AcGraphics
 {
@@ -97,7 +96,7 @@ public struct AcGraphics
     public int    Status;           // 0=OFF 1=REPLAY 2=LIVE 3=PAUSE
     public int    Session;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public ushort[] CurrentTime;    // wchar_t[15] = 30 bytes
+    public ushort[] CurrentTime;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
     public ushort[] LastTime;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
@@ -106,8 +105,8 @@ public struct AcGraphics
     public ushort[] Split;
     public int    CompletedLaps;
     public int    Position;
-    public int    ICurrentTime;     // current lap ms
-    public int    ILastTime;        // last lap ms
+    public int    ICurrentTime;
+    public int    ILastTime;
     public int    IBestTime;
     public float  SessionTimeLeft;
     public float  DistanceTraveled;
@@ -116,12 +115,15 @@ public struct AcGraphics
     public int    LastSectorTime;
     public int    NumberOfLaps;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public ushort[] TyreCompound;   // wchar_t[33]
+    public ushort[] TyreCompound;
     public float  ReplayTimeMultiplier;
     public float  NormalizedCarPosition;
     public int    ActiveCars;
+    // 4-byte field present in AC memory between activeCars and carCoordinates
+    // (empirically discovered: bytes 256-259 read as constant ~5.2 when not present)
+    public float  _carsOrientations;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 180)]
-    public float[] CarCoordinates;  // 60 cars × 3 floats
+    public float[] CarCoordinates;  // now correctly at offset 260: [0]=axis1, [1]=height, [2]=axis2
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
@@ -148,6 +150,8 @@ public struct AcStatic
 
 public static class AcStructHelper
 {
-    public static (float X, float Y, float Z) GetPlayerPosition(AcGraphics g)
+    // carCoordinates[0] and [2] are the two horizontal world axes
+    // carCoordinates[1] is height (~0 on flat track)
+    public static (float A, float Height, float B) GetPlayerPosition(AcGraphics g)
         => (g.CarCoordinates[0], g.CarCoordinates[1], g.CarCoordinates[2]);
 }

@@ -2,6 +2,7 @@ namespace CompanionAgent.Core;
 
 public record TelemetryFrame(
     float X,
+    float Y,          // AC longitudinal axis (forward/back)
     float Z,
     float SpeedKmh,
     float Throttle,

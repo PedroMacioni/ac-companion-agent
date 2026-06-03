@@ -19,6 +19,7 @@ public sealed class SyncWorker : IDisposable
     private int _consecutiveFailures;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private DateTimeOffset? _lastSeenSyncRequest;
+    private readonly TelemetryCollector _telemetry = new();
     private LogService? _log;
 
     public event Action<SyncState, string>? StateChanged;
@@ -37,8 +38,41 @@ public sealed class SyncWorker : IDisposable
     public void Start(int intervalMinutes, bool setupWatchers = true)
     {
         if (setupWatchers) SetupWatchers();
+        _telemetry.Start();
+        _telemetry.SessionEnded += OnTelemetrySessionEnded;
         _timer = new System.Threading.Timer(_ => _ = TickAsync(),
             null, TimeSpan.Zero, TimeSpan.FromMinutes(intervalMinutes));
+    }
+
+    private void OnTelemetrySessionEnded(object? sender, SessionTelemetryResult result)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                if (!_supabase.IsConfigured) return;
+                var sessionSourceId = _cache.SyncedSessionIds.LastOrDefault();
+                if (sessionSourceId is null) return;
+
+                var dto = new LapTelemetryDto
+                {
+                    UserId = _supabase.UserId,
+                    SessionSourceId = sessionSourceId,
+                    LapNumber = 0,
+                    Data = TelemetryMapper.ToDto(result.BestLap),
+                    SampleHz = 20,
+                };
+
+                var ok = await _supabase.UpsertLapTelemetryAsync(dto);
+                LogActivity(ok
+                    ? "✓ Telemetria da melhor volta enviada"
+                    : "⚠ Falha ao enviar telemetria");
+            }
+            catch (Exception ex)
+            {
+                LogActivity($"⚠ Telemetria: {ex.Message}", LogLevel.Warning, LogCategory.Sync);
+            }
+        });
     }
 
     private async Task TickAsync()
@@ -662,6 +696,8 @@ public sealed class SyncWorker : IDisposable
         _sessionWatcher?.Dispose();
         _pbWatcher?.Dispose();
         _retryQueue.Dispose();
+        _telemetry.SessionEnded -= OnTelemetrySessionEnded;
+        _telemetry.Dispose();
         _lock.Dispose();
     }
 }

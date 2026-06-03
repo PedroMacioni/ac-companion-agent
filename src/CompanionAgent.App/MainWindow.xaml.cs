@@ -57,13 +57,6 @@ public partial class MainWindow : Window
             App.OverviewVm.UserEmail = "";
             App.Log.Info(LogCategory.Auth, "Conta desconectada");
         };
-
-        _aboutTab.OnInstallUpdateRequested += () =>
-        {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
-                "https://github.com/PedroMacioni/ac-companion-agent/releases/latest")
-                { UseShellExecute = true });
-        };
     }
 
     private void WireStatusIndicator()
@@ -95,27 +88,27 @@ public partial class MainWindow : Window
         switch (vm.CurrentSyncState)
         {
             case SyncState.Syncing:
-                SyncDot.Fill = new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B)); // amber
+                SyncDot.Fill = new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B));
                 SyncStateText.Text = vm.StatusMessage;
                 SyncStateText.Foreground = new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B));
                 SyncDot.BeginAnimation(UIElement.OpacityProperty, _pulseAnimation);
                 break;
             case SyncState.Error:
-                SyncDot.Fill = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44)); // red
+                SyncDot.Fill = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44));
                 SyncStateText.Text = vm.StatusMessage;
                 SyncStateText.Foreground = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44));
                 SyncDot.BeginAnimation(UIElement.OpacityProperty, null);
                 SyncDot.Opacity = 1;
                 break;
             case SyncState.Idle:
-                SyncDot.Fill = new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E)); // green
+                SyncDot.Fill = new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E));
                 SyncStateText.Text = "Sincronizado";
                 SyncStateText.Foreground = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88));
                 SyncDot.BeginAnimation(UIElement.OpacityProperty, null);
                 SyncDot.Opacity = 1;
                 break;
             default:
-                SyncDot.Fill = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)); // gray
+                SyncDot.Fill = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88));
                 SyncStateText.Text = vm.IsConnected ? "Pronto" : "Desconectado";
                 SyncStateText.Foreground = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88));
                 SyncDot.BeginAnimation(UIElement.OpacityProperty, null);

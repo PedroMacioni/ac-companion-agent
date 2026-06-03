@@ -24,7 +24,7 @@ public partial class AboutTab : UserControl
                 { UseShellExecute = true });
         };
 
-        BtnInstallUpdate.Click += (_, _) => OnInstallUpdateRequested?.Invoke();
+        BtnInstallUpdate.Click += async (_, _) => await App.DoInstallUpdateAsync();
 
         BtnViewChangelog.Click += (_, _) =>
         {
@@ -47,7 +47,6 @@ public partial class AboutTab : UserControl
         {
             UpdateBanner.Visibility = Visibility.Collapsed;
         }
+        BtnInstallUpdate.IsEnabled = !vm.IsInstalling;
     }
-
-    public event Action? OnInstallUpdateRequested;
 }

@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace CompanionAgent.Core;
 
-[StructLayout(LayoutKind.Sequential, Pack = 4)]
+[StructLayout(LayoutKind.Sequential, Pack = 4, CharSet = CharSet.Unicode)]
 public struct AcPhysics
 {
     public int    PacketId;
@@ -88,21 +88,21 @@ public struct AcPhysics
     public float[] LocalVelocity;
 }
 
-// wchar_t in AC shared memory = 2 bytes — use ushort[] not char[]
-[StructLayout(LayoutKind.Sequential, Pack = 4)]
+// Matches rsys-dev/accsharedmemory exactly: CharSet.Unicode + ByValTStr for strings
+[StructLayout(LayoutKind.Sequential, Pack = 4, CharSet = CharSet.Unicode)]
 public struct AcGraphics
 {
     public int    PacketId;
     public int    Status;           // 0=OFF 1=REPLAY 2=LIVE 3=PAUSE
     public int    Session;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public ushort[] CurrentTime;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public ushort[] LastTime;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public ushort[] BestTime;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public ushort[] Split;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 15)]
+    public string CurrentTime;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 15)]
+    public string LastTime;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 15)]
+    public string BestTime;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 15)]
+    public string Split;
     public int    CompletedLaps;
     public int    Position;
     public int    ICurrentTime;
@@ -114,44 +114,62 @@ public struct AcGraphics
     public int    CurrentSectorIndex;
     public int    LastSectorTime;
     public int    NumberOfLaps;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public ushort[] TyreCompound;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 33)]
+    public string TyreCompound;
     public float  ReplayTimeMultiplier;
     public float  NormalizedCarPosition;
     public int    ActiveCars;
-    // 4-byte field present in AC memory between activeCars and carCoordinates
-    // (empirically discovered: bytes 256-259 read as constant ~5.2 when not present)
-    public float  _carsOrientations;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 180)]
-    public float[] CarCoordinates;  // now correctly at offset 260: [0]=axis1, [1]=height, [2]=axis2
+    public float[] CarCoordinates;  // 60 cars × 3 floats [X, Y, Z]
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 60)]
+    public int[]  CarID;
+    public int    PlayerCarID;
 }
 
-[StructLayout(LayoutKind.Sequential, Pack = 4)]
+[StructLayout(LayoutKind.Sequential, Pack = 4, CharSet = CharSet.Unicode)]
 public struct AcStatic
 {
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public ushort[] SmVersion;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public ushort[] AcVersion;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 15)]
+    public string SmVersion;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 15)]
+    public string AcVersion;
     public int    NumberOfSessions;
     public int    NumberOfCars;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public ushort[] CarModel;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public ushort[] Track;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public ushort[] PlayerName;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public ushort[] PlayerSurname;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public ushort[] PlayerNick;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 33)]
+    public string CarModel;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 33)]
+    public string Track;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 33)]
+    public string PlayerName;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 33)]
+    public string PlayerSurname;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 33)]
+    public string PlayerNick;
     public int    SectorCount;
 }
 
 public static class AcStructHelper
 {
-    // carCoordinates[0] and [2] are the two horizontal world axes
-    // carCoordinates[1] is height (~0 on flat track)
-    public static (float A, float Height, float B) GetPlayerPosition(AcGraphics g)
-        => (g.CarCoordinates[0], g.CarCoordinates[1], g.CarCoordinates[2]);
+    // Use PlayerCarID to find the player's slot in CarCoordinates
+    // Fallback to index 0 in single-player if CarID lookup fails
+    public static (float X, float Y, float Z) GetPlayerPosition(AcGraphics g)
+    {
+        if (g.CarCoordinates is null || g.CarCoordinates.Length < 3)
+            return (0, 0, 0);
+
+        var idx = 0;
+        if (g.CarID != null)
+        {
+            for (int i = 0; i < g.CarID.Length && i * 3 + 2 < g.CarCoordinates.Length; i++)
+            {
+                if (g.CarID[i] == g.PlayerCarID)
+                {
+                    idx = i;
+                    break;
+                }
+            }
+        }
+
+        return (g.CarCoordinates[idx * 3], g.CarCoordinates[idx * 3 + 1], g.CarCoordinates[idx * 3 + 2]);
+    }
 }

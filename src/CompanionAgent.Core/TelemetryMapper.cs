@@ -8,6 +8,7 @@ public static class TelemetryMapper
             .Select(f => new[]
             {
                 (int)(f.X * 10),
+                (int)(f.Y * 10),
                 (int)(f.Z * 10),
                 (int)f.SpeedKmh,
                 (int)(f.Throttle * 100),

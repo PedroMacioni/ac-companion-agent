@@ -1,5 +1,4 @@
 using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
 
 namespace CompanionAgent.Core;
 
@@ -28,24 +27,24 @@ public sealed class AcSharedMemoryReader : IDisposable
         catch { return false; }
     }
 
-    public AcPhysics?  ReadPhysics()  => TryRead<AcPhysics>(_physicsView);
-    public AcGraphics? ReadGraphics() => TryRead<AcGraphics>(_graphicsView);
-    public AcStatic?   ReadStatic()   => TryRead<AcStatic>(_staticView);
-
-    // Read<T> does not initialize MarshalAs arrays inside structs.
-    // Use Marshal.PtrToStructure via a pinned byte array instead.
-    private static T? TryRead<T>(MemoryMappedViewAccessor? view) where T : struct
+    public AcPhysics?  ReadPhysics()
     {
-        if (view is null) return null;
-        try
-        {
-            var size  = Marshal.SizeOf<T>();
-            var bytes = new byte[size];
-            view.ReadArray(0, bytes, 0, size);
-            var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-            try   { return Marshal.PtrToStructure<T>(handle.AddrOfPinnedObject()); }
-            finally { handle.Free(); }
-        }
+        if (_physicsView is null) return null;
+        try { _physicsView.Read(0, out AcPhysics r); return r; }
+        catch { return null; }
+    }
+
+    public AcGraphics? ReadGraphics()
+    {
+        if (_graphicsView is null) return null;
+        try { _graphicsView.Read(0, out AcGraphics r); return r; }
+        catch { return null; }
+    }
+
+    public AcStatic? ReadStatic()
+    {
+        if (_staticView is null) return null;
+        try { _staticView.Read(0, out AcStatic r); return r; }
         catch { return null; }
     }
 

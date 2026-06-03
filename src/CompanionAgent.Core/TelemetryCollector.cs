@@ -12,13 +12,6 @@ public sealed class TelemetryCollector : IDisposable
     private int _bestLapTime = int.MaxValue;
     private bool _sessionActive;
 
-    // Dead-reckoning: integrate AcPhysics.Velocity to get world position.
-    // This is reliable regardless of carCoordinates struct alignment.
-    // Velocity[0]=east, Velocity[1]=up, Velocity[2]=north/south in AC world frame.
-    private float _intX;
-    private float _intY;
-    private float _intZ;
-
     public bool IsConnected { get; private set; }
 
     public event EventHandler<CompletedLapTelemetry>? BestLapCompleted;
@@ -56,20 +49,12 @@ public sealed class TelemetryCollector : IDisposable
 
             _sessionActive = true;
 
-            // Integrate world velocity (m/s) at 20 Hz to build 2D track path.
-            // All 3 axes are captured; the web auto-selects the 2 with largest range.
-            if (p.Velocity is { Length: >= 3 })
-            {
-                const float dt = 0.05f;
-                _intX += p.Velocity[0] * dt;
-                _intY += p.Velocity[1] * dt;
-                _intZ += p.Velocity[2] * dt;
-            }
+            var (cx, cy, cz) = AcStructHelper.GetPlayerPosition(g);
 
             _buffer.AddFrame(new TelemetryFrame(
-                X:         _intX,
-                Y:         _intY,
-                Z:         _intZ,
+                X:         cx,
+                Y:         cy,
+                Z:         cz,
                 SpeedKmh:  p.SpeedKmh,
                 Throttle:  p.Gas,
                 Brake:     p.Brake,
@@ -87,9 +72,6 @@ public sealed class TelemetryCollector : IDisposable
                 var lapTime = g.ILastTime;
                 var completed = _buffer.Finish(lapTime, hasCut: false);
                 _buffer.Clear();
-                _intX = 0;
-                _intY = 0;
-                _intZ = 0;
 
                 if (completed is not null && lapTime > 0 && lapTime < _bestLapTime)
                 {
@@ -115,9 +97,6 @@ public sealed class TelemetryCollector : IDisposable
         }
         _lastCompletedLaps = -1;
         _lastSectorIndex = -1;
-        _intX = 0;
-        _intY = 0;
-        _intZ = 0;
         _buffer.Clear();
     }
 

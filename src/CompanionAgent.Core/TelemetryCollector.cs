@@ -6,18 +6,17 @@ public sealed class TelemetryCollector : IDisposable
     private readonly LapBuffer _buffer = new();
     private Timer? _timer;
 
+    private int _lastCompletedLaps = -1;
+    private int _lastSectorIndex = -1;
     private CompletedLapTelemetry? _bestLap;
     private int _bestLapTime = int.MaxValue;
     private bool _sessionActive;
-
-    // Lap delimitation via normalizedCarPosition: a lap is captured strictly
-    // between two start/finish line crossings, which guarantees a closed loop
-    // and discards the out-lap (pit exit) that precedes the first crossing.
-    private float _lastNormPos = -1f;
-    private bool  _hasStartedLap;
-    private int   _lastSectorIndex = -1;
+    private bool _announcedConnected;
 
     public bool IsConnected { get; private set; }
+
+    // Optional logging hook so the agent UI/log can show telemetry activity.
+    public Action<string>? Log { get; set; }
 
     public event EventHandler<CompletedLapTelemetry>? BestLapCompleted;
     public event EventHandler<SessionTelemetryResult>? SessionEnded;
@@ -34,6 +33,11 @@ public sealed class TelemetryCollector : IDisposable
             if (!IsConnected)
             {
                 IsConnected = _reader.TryConnect();
+                if (IsConnected && !_announcedConnected)
+                {
+                    _announcedConnected = true;
+                    Log?.Invoke("Telemetria: conectado ao Assetto Corsa");
+                }
                 return;
             }
 
@@ -52,60 +56,57 @@ public sealed class TelemetryCollector : IDisposable
                 return;
             }
 
-            _sessionActive = true;
-
-            var normPos = g.NormalizedCarPosition;
-
-            // Detect start/finish line crossing: normPos wraps from ~1.0 back to ~0.0
-            bool crossedLine = _lastNormPos > 0.9f && normPos < 0.1f;
-            _lastNormPos = normPos;
-
-            if (crossedLine)
+            if (!_sessionActive)
             {
-                // The buffer now holds a full closed lap (crossing -> crossing).
-                if (_hasStartedLap)
-                {
-                    var lapTime = g.ILastTime;
-                    var completed = _buffer.Finish(lapTime, hasCut: false);
+                _sessionActive = true;
+                Log?.Invoke("Telemetria: sessão ao vivo detectada, gravando");
+            }
 
-                    if (completed is not null && lapTime > 0 && lapTime < _bestLapTime)
+            var (cx, cy, cz) = AcStructHelper.GetPlayerPosition(g);
+
+            _buffer.AddFrame(new TelemetryFrame(
+                X:         cx,
+                Y:         cy,
+                Z:         cz,
+                SpeedKmh:  p.SpeedKmh,
+                Throttle:  p.Gas,
+                Brake:     p.Brake,
+                NormPos:   g.NormalizedCarPosition,
+                LapTimeMs: g.ICurrentTime
+            ));
+
+            if (g.CurrentSectorIndex != _lastSectorIndex && _lastSectorIndex >= 0)
+                _buffer.RecordSectorBoundary(_lastSectorIndex, g.NormalizedCarPosition);
+            _lastSectorIndex = g.CurrentSectorIndex;
+
+            // A lap completed (the game incremented the lap counter).
+            if (g.CompletedLaps > _lastCompletedLaps && _lastCompletedLaps >= 0)
+            {
+                var lapTime = g.ILastTime;
+                var frames = _buffer.FrameCount;
+                var completed = _buffer.Finish(lapTime, hasCut: false);
+                _buffer.Clear();
+                _lastSectorIndex = -1;
+
+                if (completed is not null && lapTime > 0)
+                {
+                    Log?.Invoke($"Telemetria: volta completa ({lapTime / 1000.0:0.000}s, {frames} pontos)");
+                    if (lapTime < _bestLapTime)
                     {
                         _bestLapTime = lapTime;
                         _bestLap = completed;
                         BestLapCompleted?.Invoke(this, completed);
+                        Log?.Invoke("Telemetria: nova melhor volta registrada");
                     }
                 }
-
-                // Start recording the next lap from a clean slate.
-                _buffer.Clear();
-                _lastSectorIndex = -1;
-                _hasStartedLap = true;
+                else
+                {
+                    Log?.Invoke($"Telemetria: volta ignorada (frames={frames}, tempo={lapTime}ms)");
+                }
             }
-
-            // Only record once we are inside a proper lap (after first crossing),
-            // so the pit-exit out-lap is never included.
-            if (_hasStartedLap)
-            {
-                var (cx, cy, cz) = AcStructHelper.GetPlayerPosition(g);
-
-                _buffer.AddFrame(new TelemetryFrame(
-                    X:         cx,
-                    Y:         cy,
-                    Z:         cz,
-                    SpeedKmh:  p.SpeedKmh,
-                    Throttle:  p.Gas,
-                    Brake:     p.Brake,
-                    NormPos:   normPos,
-                    LapTimeMs: g.ICurrentTime
-                ));
-
-                if (g.CurrentSectorIndex != _lastSectorIndex && _lastSectorIndex >= 0)
-                    _buffer.RecordSectorBoundary(_lastSectorIndex, normPos);
-
-                _lastSectorIndex = g.CurrentSectorIndex;
-            }
+            _lastCompletedLaps = g.CompletedLaps;
         }
-        catch { }
+        catch { /* never crash the timer thread */ }
     }
 
     private void EndSession()
@@ -113,12 +114,16 @@ public sealed class TelemetryCollector : IDisposable
         _sessionActive = false;
         if (_bestLap is not null)
         {
+            Log?.Invoke($"Telemetria: sessão encerrada, enviando melhor volta ({_bestLapTime / 1000.0:0.000}s)");
             SessionEnded?.Invoke(this, new SessionTelemetryResult(_bestLap, _bestLapTime));
             _bestLap = null;
             _bestLapTime = int.MaxValue;
         }
-        _hasStartedLap = false;
-        _lastNormPos = -1f;
+        else
+        {
+            Log?.Invoke("Telemetria: sessão encerrada sem volta completa para enviar");
+        }
+        _lastCompletedLaps = -1;
         _lastSectorIndex = -1;
         _buffer.Clear();
     }

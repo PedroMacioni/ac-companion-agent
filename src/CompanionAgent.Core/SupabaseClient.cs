@@ -309,6 +309,22 @@ public sealed class SupabaseClient : IDisposable
         }
     }
 
+
+    public async Task<bool> UpsertLapTelemetryAsync(
+        LapTelemetryDto dto,
+        CancellationToken ct = default)
+    {
+        await EnsureValidTokenAsync();
+        var req = BuildRequest(HttpMethod.Post, "/rest/v1/lap_telemetry?on_conflict=user_id,session_source_id,lap_number");
+        req.Headers.Add("Prefer", "resolution=merge-duplicates,return=minimal");
+        req.Content = new StringContent(
+            JsonSerializer.Serialize(dto),
+            Encoding.UTF8,
+            "application/json");
+        var res = await _http.SendAsync(req, ct);
+        return res.IsSuccessStatusCode;
+    }
+
     public async Task<DateTimeOffset?> GetSyncRequestedAtAsync()
     {
         await EnsureValidTokenAsync();

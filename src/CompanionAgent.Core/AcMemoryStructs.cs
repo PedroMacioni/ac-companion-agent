@@ -88,24 +88,26 @@ public struct AcPhysics
     public float[] LocalVelocity;
 }
 
+// wchar_t in AC shared memory is 2 bytes — use ushort[] not char[]
+// char[] with ByValArray marshals as 1 byte (ANSI), causing struct misalignment
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
 public struct AcGraphics
 {
     public int    PacketId;
-    public int    Status;
+    public int    Status;           // 0=OFF 1=REPLAY 2=LIVE 3=PAUSE
     public int    Session;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public char[] CurrentTime;
+    public ushort[] CurrentTime;    // wchar_t[15] = 30 bytes
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public char[] LastTime;
+    public ushort[] LastTime;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public char[] BestTime;
+    public ushort[] BestTime;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
-    public char[] Split;
+    public ushort[] Split;
     public int    CompletedLaps;
     public int    Position;
-    public int    ICurrentTime;
-    public int    ILastTime;
+    public int    ICurrentTime;     // current lap ms
+    public int    ILastTime;        // last lap ms
     public int    IBestTime;
     public float  SessionTimeLeft;
     public float  DistanceTraveled;
@@ -114,33 +116,33 @@ public struct AcGraphics
     public int    LastSectorTime;
     public int    NumberOfLaps;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public char[] TyreCompound;
+    public ushort[] TyreCompound;   // wchar_t[33]
     public float  ReplayTimeMultiplier;
     public float  NormalizedCarPosition;
     public int    ActiveCars;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 180)]
-    public float[] CarCoordinates;
+    public float[] CarCoordinates;  // 60 cars × 3 floats
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
 public struct AcStatic
 {
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public char[] SmVersion;
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public char[] AcVersion;
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
+    public ushort[] SmVersion;
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
+    public ushort[] AcVersion;
     public int    NumberOfSessions;
     public int    NumberOfCars;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public char[] CarModel;
+    public ushort[] CarModel;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public char[] Track;
+    public ushort[] Track;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public char[] PlayerName;
+    public ushort[] PlayerName;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public char[] PlayerSurname;
+    public ushort[] PlayerSurname;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 33)]
-    public char[] PlayerNick;
+    public ushort[] PlayerNick;
     public int    SectorCount;
 }
 
@@ -148,7 +150,4 @@ public static class AcStructHelper
 {
     public static (float X, float Y, float Z) GetPlayerPosition(AcGraphics g)
         => (g.CarCoordinates[0], g.CarCoordinates[1], g.CarCoordinates[2]);
-
-    public static string CharsToString(char[] chars)
-        => new string(chars).TrimEnd('\0');
 }

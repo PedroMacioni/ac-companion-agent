@@ -38,6 +38,7 @@ public sealed class SyncWorker : IDisposable
     public void Start(int intervalMinutes, bool setupWatchers = true)
     {
         if (setupWatchers) SetupWatchers();
+        _telemetry.Log = m => LogActivity(m, LogLevel.Info, LogCategory.Sync);
         _telemetry.Start();
         _telemetry.SessionEnded += OnTelemetrySessionEnded;
         _timer = new System.Threading.Timer(_ => _ = TickAsync(),

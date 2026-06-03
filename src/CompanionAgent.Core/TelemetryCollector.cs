@@ -24,57 +24,68 @@ public sealed class TelemetryCollector : IDisposable
 
     private void OnTick(object? _)
     {
-        if (!IsConnected)
+        try
         {
-            IsConnected = _reader.TryConnect();
-            return;
-        }
-
-        var physics  = _reader.ReadPhysics();
-        var graphics = _reader.ReadGraphics();
-        if (physics is null || graphics is null) return;
-
-        var g = graphics.Value;
-        var p = physics.Value;
-
-        if (g.Status != 2)
-        {
-            if (_sessionActive) EndSession();
-            return;
-        }
-
-        _sessionActive = true;
-        var (x, _, z) = AcStructHelper.GetPlayerPosition(g);
-
-        _buffer.AddFrame(new TelemetryFrame(
-            X: x, Z: z,
-            SpeedKmh: p.SpeedKmh,
-            Throttle: p.Gas,
-            Brake: p.Brake,
-            NormPos: g.NormalizedCarPosition,
-            LapTimeMs: g.ICurrentTime
-        ));
-
-        if (g.CurrentSectorIndex != _lastSectorIndex && _lastSectorIndex >= 0)
-            _buffer.RecordSectorBoundary(_lastSectorIndex, g.NormalizedCarPosition);
-
-        _lastSectorIndex = g.CurrentSectorIndex;
-
-        if (g.CompletedLaps > _lastCompletedLaps && _lastCompletedLaps >= 0)
-        {
-            var lapTime = g.ILastTime;
-            var completed = _buffer.Finish(lapTime, hasCut: false);
-            _buffer.Clear();
-
-            if (completed is not null && lapTime > 0 && lapTime < _bestLapTime)
+            if (!IsConnected)
             {
-                _bestLapTime = lapTime;
-                _bestLap = completed;
-                BestLapCompleted?.Invoke(this, completed);
+                IsConnected = _reader.TryConnect();
+                return;
             }
-        }
 
-        _lastCompletedLaps = g.CompletedLaps;
+            var physics  = _reader.ReadPhysics();
+            var graphics = _reader.ReadGraphics();
+            if (physics is null || graphics is null) return;
+
+            var g = graphics.Value;
+            var p = physics.Value;
+
+            // Guard: arrays may be null if struct layout mismatches AC version
+            if (g.CarCoordinates is null || g.CarCoordinates.Length < 3) return;
+
+            if (g.Status != 2)
+            {
+                if (_sessionActive) EndSession();
+                return;
+            }
+
+            _sessionActive = true;
+            var (x, _, z) = AcStructHelper.GetPlayerPosition(g);
+
+            _buffer.AddFrame(new TelemetryFrame(
+                X: x, Z: z,
+                SpeedKmh: p.SpeedKmh,
+                Throttle: p.Gas,
+                Brake: p.Brake,
+                NormPos: g.NormalizedCarPosition,
+                LapTimeMs: g.ICurrentTime
+            ));
+
+            if (g.CurrentSectorIndex != _lastSectorIndex && _lastSectorIndex >= 0)
+                _buffer.RecordSectorBoundary(_lastSectorIndex, g.NormalizedCarPosition);
+
+            _lastSectorIndex = g.CurrentSectorIndex;
+
+            if (g.CompletedLaps > _lastCompletedLaps && _lastCompletedLaps >= 0)
+            {
+                var lapTime = g.ILastTime;
+                var completed = _buffer.Finish(lapTime, hasCut: false);
+                _buffer.Clear();
+
+                if (completed is not null && lapTime > 0 && lapTime < _bestLapTime)
+                {
+                    _bestLapTime = lapTime;
+                    _bestLap = completed;
+                    BestLapCompleted?.Invoke(this, completed);
+                }
+            }
+
+            _lastCompletedLaps = g.CompletedLaps;
+        }
+        catch
+        {
+            // Swallow all exceptions in the timer callback — a crash here
+            // would terminate the entire process with no user feedback.
+        }
     }
 
     private void EndSession()

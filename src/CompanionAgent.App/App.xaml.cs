@@ -21,6 +21,7 @@ public partial class App : Application
     private MainWindow? _mainWindow;
     private DispatcherTimer? _countdownTimer;
     private int _syncCountdownRemaining;
+    private readonly UpdateService _updates = new();
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -79,6 +80,7 @@ public partial class App : Application
         ShowMainWindow();
 
         Log.Info(LogCategory.App, $"Sim Racing Companion v{AboutVm.CurrentVersion} iniciado");
+        _ = CheckForUpdatesAsync();
     }
 
     public static void StartSyncWorker()
@@ -142,11 +144,47 @@ public partial class App : Application
         _mainWindow.Activate();
     }
 
+    private async Task CheckForUpdatesAsync()
+    {
+        var update = await _updates.CheckAsync();
+        Dispatcher.Invoke(() =>
+        {
+            if (update is not null)
+            {
+                AboutVm.UpdateAvailable = true;
+                AboutVm.AvailableVersion = update.Version;
+                AboutVm.UpdateStatus = $"v{update.Version} disponível para instalar";
+            }
+            else
+            {
+                AboutVm.UpdateStatus = $"v{AboutVm.CurrentVersion} · versão mais recente";
+            }
+        });
+    }
+
+    public static async Task DoInstallUpdateAsync()
+    {
+        var app = (App)Current;
+        AboutVm.IsInstalling = true;
+        AboutVm.UpdateStatus = "Baixando atualização...";
+        try
+        {
+            await app._updates.DownloadAndInstallAsync();
+            Current.Shutdown();
+        }
+        catch
+        {
+            AboutVm.IsInstalling = false;
+            AboutVm.UpdateStatus = "Erro ao baixar. Veja github.com/PedroMacioni/ac-companion-agent";
+        }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         Worker?.Dispose();
         _tray?.Dispose();
         _countdownTimer?.Stop();
+        _updates.Dispose();
         base.OnExit(e);
     }
 }

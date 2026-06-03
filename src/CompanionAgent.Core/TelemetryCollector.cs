@@ -39,7 +39,6 @@ public sealed class TelemetryCollector : IDisposable
             var g = graphics.Value;
             var p = physics.Value;
 
-            // Guard: arrays may be null if struct layout mismatches AC version
             if (g.CarCoordinates is null || g.CarCoordinates.Length < 3) return;
 
             if (g.Status != 2)
@@ -49,14 +48,15 @@ public sealed class TelemetryCollector : IDisposable
             }
 
             _sessionActive = true;
-            var (x, _, z) = AcStructHelper.GetPlayerPosition(g);
 
             _buffer.AddFrame(new TelemetryFrame(
-                X: x, Z: z,
-                SpeedKmh: p.SpeedKmh,
-                Throttle: p.Gas,
-                Brake: p.Brake,
-                NormPos: g.NormalizedCarPosition,
+                X:         g.CarCoordinates[0],
+                Y:         g.CarCoordinates[1],
+                Z:         g.CarCoordinates[2],
+                SpeedKmh:  p.SpeedKmh,
+                Throttle:  p.Gas,
+                Brake:     p.Brake,
+                NormPos:   g.NormalizedCarPosition,
                 LapTimeMs: g.ICurrentTime
             ));
 
@@ -81,11 +81,7 @@ public sealed class TelemetryCollector : IDisposable
 
             _lastCompletedLaps = g.CompletedLaps;
         }
-        catch
-        {
-            // Swallow all exceptions in the timer callback — a crash here
-            // would terminate the entire process with no user feedback.
-        }
+        catch { }
     }
 
     private void EndSession()

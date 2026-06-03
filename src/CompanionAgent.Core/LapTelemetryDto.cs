@@ -22,6 +22,7 @@ public class LapTelemetryDto
 
 public class LapTelemetryDataDto
 {
+    // [[x×10, y×10, z×10, speed_kmh, throttle_pct, brake_pct], ...]
     [JsonPropertyName("p")]
     public required int[][] Points { get; init; }
 
